@@ -46,7 +46,7 @@ class TLDetector(object):
         self.state_count = 0
 
         config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string,Loader=yaml.FullLoader)
+        self.config = yaml.load(config_string)
         self.stop_line_positions = self.config['stop_line_positions']
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
