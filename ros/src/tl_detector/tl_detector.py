@@ -20,7 +20,7 @@ STATE_COUNT_THRESHOLD = 3
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
-
+        rospy.loginfo("Welcome to tl_detector")
         self.pose = None
 
         self.base_waypoints = None

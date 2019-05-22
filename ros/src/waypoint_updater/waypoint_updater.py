@@ -6,6 +6,8 @@ from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
 from scipy.spatial import KDTree
 import numpy as np
+import time
+import thread
 
 import math
 
@@ -30,7 +32,19 @@ MAX_DECL = 0.5
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater')
+        rospy.init_node('waypoint_updater', log_level=rospy.INFO)
+        rospy.loginfo("Welcome to waypoint_updater")
+
+        # TODO: Add other member variables you need below
+        self.pose = None
+        self.base_waypoints = None
+        self.stopline_wp_idx = -1
+        self.waypoints_2d = None
+        self.waypoint_tree = None
+        self.thread_working = False
+
+        self.waypoint_delay_time = 0
+        self.pose_delay_time = 0
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -40,18 +54,12 @@ class WaypointUpdater(object):
         
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
-        self.pose = None
-        self.base_waypoints = None
-        self.stopline_wp_idx = -1
-        self.waypoints_2d = None
-        self.waypoint_tree = None
 
-
-        self.loop()
+        rospy.spin()
+        #self.loop()
 
     def loop(self):
-        rate = rospy.Rate(50)
+        rate = rospy.Rate(5)
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints:
                 self.publish_waypoints()
@@ -76,8 +84,15 @@ class WaypointUpdater(object):
         return closest_idx
 
     def publish_waypoints(self):
+        start_t = time.time()
+
         final_wp = self.generate_wp()
         self.final_waypoints_pub.publish(final_wp)
+
+        current_time = time.time()
+        rospy.loginfo("Waypoint delay time:%.4f s", current_time - self.waypoint_delay_time)
+
+        self.thread_working = False
 
     def generate_wp(self):
         lane = Lane()
@@ -112,11 +127,29 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         # TODO: Implement
+        current_time = time.time()
+        rospy.loginfo("Pose update time:%.4f s", current_time - self.pose_delay_time)
+        self.pose_delay_time = current_time
+        
         self.pose = msg
+        if not self.thread_working:
+            if self.base_waypoints:
+
+                self.thread_working = True
+                self.waypoint_delay_time = time.time()
+                thread.start_new_thread( self.publish_waypoints, ())
+        else:
+            pass
+                
+
+        current_time = time.time()
+        
+        self.last_pose_time = current_time
 
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
+        rospy.loginfo("Base waypoint Callback")
         self.base_waypoints = waypoints
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
