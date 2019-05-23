@@ -39,7 +39,9 @@ def dice_coef_loss(y_true, y_pred):
 
 class TLDetector(object):
     def __init__(self):
-        rospy.init_node('tl_detector', log_level=rospy.DEBUG)
+
+        rospy.init_node('tl_detector')
+        rospy.loginfo("Welcome to tl_detector")
 
         self.pose = None
 
@@ -93,7 +95,7 @@ class TLDetector(object):
         self.state_count = 0
 
         config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string,Loader=yaml.FullLoader)
+        self.config = yaml.load(config_string)
         self.stop_line_positions = self.config['stop_line_positions']
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
