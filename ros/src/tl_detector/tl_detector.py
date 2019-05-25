@@ -566,7 +566,7 @@ class TLDetector(object):
         else:
             rospy.logwarn("[Mobilenet] No EGO position available!")
 
-        return -1, TrafficLight.UNKNOWNs
+        return -1, TrafficLight.UNKNOWN
 
         #Simulation code start
         '''
