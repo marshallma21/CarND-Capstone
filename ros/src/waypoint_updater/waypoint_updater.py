@@ -89,7 +89,7 @@ class WaypointUpdater(object):
         self.final_waypoints_pub.publish(final_wp)
 
         current_time = time.time()
-        rospy.loginfo("Waypoint delay time:%.4f s", current_time - self.waypoint_delay_time)
+        rospy.logdebug("Waypoint delay time:%.4f s", current_time - self.waypoint_delay_time)
 
         self.thread_working = False
 
@@ -127,7 +127,7 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         # TODO: Implement
         current_time = time.time()
-        rospy.loginfo("Pose update time:%.4f s", current_time - self.pose_delay_time)
+        rospy.logdebug("Pose update time:%.4f s", current_time - self.pose_delay_time)
         self.pose_delay_time = current_time
         
         self.pose = msg
@@ -157,8 +157,10 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
+        if self.stopline_wp_idx != msg.data:
+            rospy.logwarn("[Waypoint Updater] stopline_wp_idx updated: %s.", msg.data)
+
         self.stopline_wp_idx = msg.data
-        rospy.logwarn("[Waypoint Updater] subscriber stopline_wp_idx: %s.", self.stopline_wp_idx)
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later

@@ -8,8 +8,6 @@ ros/bag
 
 profile.tmp
 .vscode/settings.json
-ros/rl
-ros/rs
 .gitignore
 ros/src/tl_detector/assets/faster-rcnn.png
 ros/src/tl_detector/00000012_tl0.jpg
