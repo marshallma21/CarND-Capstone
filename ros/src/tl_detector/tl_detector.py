@@ -113,8 +113,8 @@ class TLDetector(object):
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
-        #mode = "unet"
-        mode = "mobilenet"    
+        mode = "unet"
+        #mode = "mobilenet"    
         if mode == "mobilenet":
             # mobilenet model
             sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
