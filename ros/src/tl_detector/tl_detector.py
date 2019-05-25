@@ -254,7 +254,9 @@ class TLDetector(object):
                     tl_image = self.detect_traffic_light(cv_image)
                     end1 = time.time()
 
-                    if tl_image is not None:
+                    if tl_image is not None: 
+                        rospy.logdebug("Detect image.shape 3=%s", tl_image.shape)  
+                        #Detect image.shape 3=(193, 106, 3)
                         rospy.logdebug("[UNET] Detection Time:%f s", end1 - start)
                         
                         state = self.light_unet_classifier.get_classification(tl_image)
@@ -341,7 +343,8 @@ class TLDetector(object):
 
         image_mask = self.detector_model.predict(resize_image[None, :, :, :], batch_size=1)[0]
         image_mask = (image_mask[:,:,0]*255).astype(np.uint8)        
-        rospy.logdebug("image_mask.shape 3=%s", resize_image.shape)     # resize_image=(96,128,1), cv_image=(600, 800, 3)
+        rospy.logdebug("image_mask.shape 3=%s", resize_image.shape)     
+        # resize_image=(96,128,1), cv_image=(600, 800, 3)
         return self._extract_image(image_mask, cv_image)
         
 

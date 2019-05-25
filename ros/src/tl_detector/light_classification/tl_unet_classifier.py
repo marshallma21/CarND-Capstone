@@ -2,6 +2,7 @@ from styx_msgs.msg import TrafficLight
 import cv2
 import tensorflow as tf
 import numpy as np
+import rospy
 
 class TLUnetClassifier(object):
     def __init__(self):
@@ -29,7 +30,9 @@ class TLUnetClassifier(object):
 
         """
         resized = cv2.resize(image, (self.width, self.height))
-        resized = resized / 255.; # Normalization
+        resized = resized / 255.; # Normalization 
+        rospy.logdebug("get_classification resized image.shape 3=%s", resized.shape) 
+        #get_classification resized image.shape 3=(64, 32, 3)
         # necessary work around to avoid troubles with keras
         with self.graph.as_default():
             predictions = self.model.predict(resized.reshape((1, self.height, self.width, self.channels)))
