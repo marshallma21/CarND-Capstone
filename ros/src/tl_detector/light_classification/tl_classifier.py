@@ -1,6 +1,6 @@
 from styx_msgs.msg import TrafficLight
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageColor
@@ -249,6 +249,7 @@ class TLClassifier(object):
 
 
         red_result = cv2.bitwise_and(rgb_image,rgb_image,mask = red_mask)
+        '''
         if display==True:
             _,ax = plt.subplots(1,5,figsize=(20,10))
             ax[0].set_title('rgb image')
@@ -262,7 +263,7 @@ class TLClassifier(object):
             ax[4].set_title('hsv image')
             ax[4].imshow(hsv)
             plt.show()
-            
+        '''
         sum_green = self.findNoneZero(green_result)
         sum_red = self.findNoneZero(red_result)
         sum_yellow = self.findNoneZero(yellow_result)
