@@ -59,7 +59,7 @@ def update_image():
 
 def thread_update_image():
     rospy.loginfo("[server.py] Start image update thread")
-    image_update_HZ = 20
+    image_update_HZ = 10
     image_update_rate = rospy.Rate(image_update_HZ) 
     while not rospy.is_shutdown():
         update_image()
