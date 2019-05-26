@@ -41,7 +41,7 @@ def dice_coef_loss(y_true, y_pred):
 class TLDetector(object):
     def __init__(self):
 
-        rospy.init_node('tl_detector')
+        rospy.init_node('tl_detector', log_level=rospy.INFO)
         rospy.loginfo("Welcome to tl_detector")
 
         self.pose = None
@@ -59,6 +59,11 @@ class TLDetector(object):
         self.frame_count = 0
         self.detector_model = None
 
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.load(config_string)
+
+        self.is_carla = self.config['tl']['is_carla']
+        rospy.loginfo("Is site running: %s", self.is_carla)
 
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
@@ -66,28 +71,29 @@ class TLDetector(object):
 
         # UNET Classifier Setup  
         self.light_unet_classifier = TLUnetClassifier()
-        tl_classification_model = "unet_models/tl_classifier_simulator.h5"
+        tl_classification_model = self.config['tl']['tl_classification_model']
+                                #"unet_models/tl_classifier_simulator.h5"
         model = load_model(tl_classification_model)
-        classifier_resize_height = 64
-        classifier_resize_width = 32
+        classifier_resize_height = self.config['tl']['classifier_resize_height'] #64
+        classifier_resize_width = self.config['tl']['classifier_resize_width'] #32
         self.light_unet_classifier.setup_classifier(model, classifier_resize_width, classifier_resize_height)
         self.invalid_class_number = 3
         
         # UNET Detector setup
-        tl_detection_model = "unet_models/tl_detector_simulator.h5"
+        tl_detection_model = self.config['tl']['tl_detection_model']
+                        #"unet_models/tl_detector_simulator.h5"
         self.detector_model = load_model(tl_detection_model, 
                                custom_objects={'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef })
         self.detector_model._make_predict_function()
         
-        self.resize_height = 96
-        self.resize_width = 128  
+        self.resize_height = self.config['tl']['detector_resize_height'] #96
+        self.resize_width = self.config['tl']['detector_resize_width'] #128  
         self.resize_height_ratio = 600/float(self.resize_height)
         self.resize_width_ratio = 800/float(self.resize_width)
-        self.color_mode = 'rgb8'
+        self.color_mode = self.config['tl']['color_mode'] #'rgb8'
         self.middle_col = self.resize_width/2
-        self.is_carla = False
-        self.projection_threshold = 2
-        self.projection_min = 200
+        self.projection_threshold = self.config['tl']['projection_threshold'] #2
+        self.projection_min = self.config['tl']['projection_min'] #200
         self.distance_to_tl_threshold = 67.0
 
         self.state = TrafficLight.UNKNOWN
@@ -95,8 +101,6 @@ class TLDetector(object):
         self.last_wp_idx = -1
         self.state_count = 0
 
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
         self.stop_line_positions = self.config['stop_line_positions']
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -118,6 +122,7 @@ class TLDetector(object):
 
         mode = "unet"
         #mode = "mobilenet"    
+        
         if mode == "mobilenet":
             # mobilenet model
             sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
@@ -125,8 +130,8 @@ class TLDetector(object):
         else:
             # u-net model
             sub6 = rospy.Subscriber('/image_color', Image, self.image_unet_cb)            
-            detector_rate = 6
-            detector_rate = rospy.Rate(detector_rate) #detector_rate: 6
+            detector_rate = self.config['tl']['detector_rate'] # simulator=6/site=20
+            detector_rate = rospy.Rate(detector_rate)  
             while not rospy.is_shutdown():
                 self.unet_find_traffic_lights()
                 detector_rate.sleep()
