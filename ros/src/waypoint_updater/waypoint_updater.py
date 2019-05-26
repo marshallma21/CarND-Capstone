@@ -29,7 +29,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 CONSTANT_DECEL = 1 / LOOKAHEAD_WPS  # Deceleration constant for smoother braking
 PUBLISHING_RATE = 20  # Rate (Hz) of waypoint publishing
-STOP_LINE_MARGIN = 8  # Distance in waypoints to pad in front of the stop line
+STOP_LINE_MARGIN = 2  # Distance in waypoints to pad in front of the stop line
 MAX_DECL = 0.5
 
 
