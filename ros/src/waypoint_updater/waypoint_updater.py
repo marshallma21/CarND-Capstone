@@ -32,7 +32,7 @@ MAX_DECL = 0.5
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater', log_level=rospy.INFO)
+        rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
         rospy.loginfo("Welcome to waypoint_updater")
 
         # TODO: Add other member variables you need below

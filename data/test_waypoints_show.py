@@ -37,7 +37,9 @@ simu_stop_lines=np.array([
     [351.84, 1574.65]])
 
 site_stop_lines=np.array([
-    [20.991, 22.837]])
+    #[20.991, 22.837]
+    [8.0, 16.2]
+    ])
     
 
 CSV_HEADER = ['x', 'y', 'z', 'yaw']
@@ -73,7 +75,7 @@ def ShowSimulatorDatas(path):
         tl_y = simu_traffic_lights[:,1]
         stop_x = simu_stop_lines[:,0]
         stop_y = simu_stop_lines[:,1]
-        plt.axes().set(xlabel='x', ylabel='y', title='base waypoints/simu_stop_lines')
+        plt.axes().set(xlabel='x', ylabel='y', title='Simulator')
         plt.plot(tl_x, tl_y, 'o', color='red')
         plt.plot(stop_x, stop_y, 'x', color='blue')
         plt.plot(waypointsX, waypointsY, color='green')
@@ -93,9 +95,9 @@ def ShowSiteDatas(path):
         #tl_y = simu_traffic_lights[:,1]
         stop_x = site_stop_lines[:,0]
         stop_y = site_stop_lines[:,1]
-        plt.axes().set(xlabel='x', ylabel='y', title='base waypoints/site_stop_lines')
+        plt.axes().set(xlabel='x', ylabel='y', title='Site')
         #plt.plot(tl_x, tl_y, 'o', color='red')
-        plt.plot(stop_x, stop_y, 'o', color='blue')
+        plt.plot(stop_x, stop_y, 'o', color='red')
         plt.plot(waypointsX, waypointsY, color='green')
         plt.show()
 

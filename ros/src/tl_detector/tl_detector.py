@@ -41,7 +41,7 @@ def dice_coef_loss(y_true, y_pred):
 class TLDetector(object):
     def __init__(self):
 
-        rospy.init_node('tl_detector', log_level=rospy.INFO)
+        rospy.init_node('tl_detector', log_level=rospy.DEBUG)
         rospy.loginfo("Welcome to tl_detector")
 
         self.pose = None

@@ -16,7 +16,7 @@ GRAPH_FILE="ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb"
 
 class TLClassifier(object):
     def __init__(self):
-        #rospy.init_node('tl_classifier', log_level=rospy.DEBUG)
+        rospy.init_node('tl_classifier', log_level=rospy.DEBUG)
 
         self.traffic_light_list = []
         self.traffic_light_scores = []
