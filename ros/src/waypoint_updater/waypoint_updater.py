@@ -26,7 +26,10 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
+CONSTANT_DECEL = 1 / LOOKAHEAD_WPS  # Deceleration constant for smoother braking
+PUBLISHING_RATE = 20  # Rate (Hz) of waypoint publishing
+STOP_LINE_MARGIN = 2  # Distance in waypoints to pad in front of the stop line
 MAX_DECL = 0.5
 
 
@@ -113,10 +116,10 @@ class WaypointUpdater(object):
             p = Waypoint()
             p.pose = waypoints[i].pose
 
-            stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0)
+            stop_idx = max(self.stopline_wp_idx - closest_idx - STOP_LINE_MARGIN, 0)
             dist = self.distance(waypoints, i, stop_idx)
-            vel = math.sqrt(2 * MAX_DECL * dist)
-            if vel < 1.0:
+            vel = math.sqrt(2 * MAX_DECL * dist) + (i * CONSTANT_DECEL)
+            if vel < 2.0:
                 vel = 0
             
             p.twist.twist.linear.x = min(vel, waypoints[i].twist.twist.linear.x)

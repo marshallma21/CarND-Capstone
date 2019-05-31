@@ -1,6 +1,53 @@
-This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
+## Capstone Project - Team Fridy 
+[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-Please use **one** of the two installation options, either native **or** docker installation.
+This is the Capstone project for the Udacity Self-Driving Car Nanodegree.
+We developed software to guide a real self-driving car around a test track.
+Using the Robot Operating System (ROS), we created nodes for :
+- traffic light detection and classification
+- trajectory planning
+- control(steering, acceleration and brake)
+
+
+You can find the latest version of this project on
+[Github](https://github.com/marshallma21/CarND-Capstone-Friday.git)
+
+
+
+### Beyond the Requirements
+
+---
+
+### Team Members
+
+| Name | Uda email |
+| ---  | --- |
+| Marshall Ma | marshall.ma@aliyun.com (Team lead) |
+|Shengda Gu| gsd_mars@hotmail.com |
+|Peng WU|  wupeng1510@163.com |
+|Winters Long| winterslong@163.com |
+| Lingfeng Ai  |  hanxiaoamx@qq.com |
+
+---
+
+### Contents
+[toc]
+
+---
+
+### Project Components
+
+
+
+#### Visualization
+#### Traffic Light Detection
+#### Traffic Light Classification
+#### Trajectory Planner
+#### Waypoint Follower
+#### Controllers
+
+
+-------------
 
 ### Native Installation
 
@@ -89,14 +136,16 @@ Specific to these libraries, the simulator grader and Carla use the following:
 
 We are working on a fix to line up the OpenCV versions between the two.
 
-If you're seeing the following error message during `catkin_make`
+### Trouble shooting 
+#### 1.If you're seeing the following error message during `catkin_make`
+
 ```
 CMake Warning at /opt/ros/kinetic/share/catkin/cmake/catkinConfig.cmake:76 (find_package):
-  Could not find a package configuration file provided by "dbw_mkz_msgs" with
-  any of the following names:
+Could not find a package configuration file provided by "dbw_mkz_msgs" with
+any of the following names:
 
-    dbw_mkz_msgsConfig.cmake
-    dbw_mkz_msgs-config.cmake
+dbw_mkz_msgsConfig.cmake
+dbw_mkz_msgs-config.cmake
 
 ```
 
@@ -105,3 +154,19 @@ Install the following package
 ```
 sudo apt-get install -y ros-kinetic-dbw-mkz-msgs
 ```
+
+#### 2.if you encounter this error information when using workspace
+```
+[ 75%] Generating EusLisp code from styx_msgs/Lane.msg
+Traceback (most recent call last):
+  File "/opt/ros/kinetic/share/geneus/cmake/../../../lib/geneus/gen_eus.py", line 39, in <module>
+    import geneus
+  File "/opt/ros/kinetic/lib/python2.7/dist-packages/geneus/__init__.py", line 32, in <module>
+    from . geneus_main import *
+  File "/opt/ros/kinetic/lib/python2.7/dist-packages/geneus/geneus_main.py", line 43, in <module>
+    from catkin import terminal_color
+  File "/opt/ros/kinetic/lib/python2.7/dist-packages/catkin/terminal_color.py", line 2, in <module>
+    from catkin_pkg.terminal_color import *  # noqa
+ImportError: No module named terminal_color
+``` 
+please use `pip install --upgrade  catkin_pkg_modules`
