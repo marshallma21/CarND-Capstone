@@ -343,6 +343,7 @@ class TLDetector(object):
         rospy.logdebug("resize_image.shape 1=%s, cv_image=%s", resize_image.shape, cv_image.shape)          
         # resize_image.shape 1=(96, 128), cv_image=(600, 800, 3)
         resize_image = resize_image[..., np.newaxis]
+		resize_image=np.array(resize_image,dtype=np.float)
         rospy.logdebug("resize_image.shape 2=%s", resize_image.shape)   # (96,128,1)
         if self.is_carla:
             mean = np.mean(resize_image) # mean for data centering
