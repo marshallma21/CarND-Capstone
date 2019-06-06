@@ -533,7 +533,7 @@ class TLDetector(object):
                     rospy.logdebug("Mobilenet Detection Time:%f s, Num of lights %d", 
                                     end1 - start, self.number_of_detected_lights)
                                     
-                    if self.number_of_detected_lights > 0:                        
+                    if self.number_of_detected_lights != TrafficLight.UNKNOWN:                        
                         #state = self.light_classifier.get_classification()
                         state = self.number_of_detected_lights
                         end2 = time.time()
