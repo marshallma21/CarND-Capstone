@@ -6,8 +6,8 @@ from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-from light_classification.tl_classifier import TLClassifier
-from light_classification.tl_unet_classifier import TLUnetClassifier
+#from light_classification.tl_classifier import TLClassifier
+#from light_classification.tl_unet_classifier import TLUnetClassifier
 import tf
 import cv2
 import yaml
@@ -63,28 +63,32 @@ class TLDetector(object):
         self.config = yaml.load(config_string)
 
         self.is_carla = self.config['tl']['is_carla']
+        rospy.set_param('is_carla',self.is_carla)
         rospy.loginfo("Is site running: %s", self.is_carla)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
-        self.listener = tf.TransformListener()
-
-        # UNET Classifier Setup  
-        self.light_unet_classifier = TLUnetClassifier()
-        tl_classification_model = self.config['tl']['tl_classification_model']
+        mode = "mobilenet"
+        if mode=="mobilenet":
+           from light_classification.tl_classifier_ssd import TLClassifier
+           self.light_classifier = TLClassifier()
+           self.listener = tf.TransformListener()
+        elif mode == "unet":
+           # UNET Classifier Setup  
+           self.light_unet_classifier = TLUnetClassifier()
+           tl_classification_model = self.config['tl']['tl_classification_model']
                                 #"unet_models/tl_classifier_simulator.h5"
-        model = load_model(tl_classification_model)
-        classifier_resize_height = self.config['tl']['classifier_resize_height'] #64
-        classifier_resize_width = self.config['tl']['classifier_resize_width'] #32
-        self.light_unet_classifier.setup_classifier(model, classifier_resize_width, classifier_resize_height)
-        self.invalid_class_number = 3
+           model = load_model(tl_classification_model)
+           classifier_resize_height = self.config['tl']['classifier_resize_height'] #64
+           classifier_resize_width = self.config['tl']['classifier_resize_width'] #32
+           self.light_unet_classifier.setup_classifier(model, classifier_resize_width, classifier_resize_height)
+           self.invalid_class_number = 3
         
-        # UNET Detector setup
-        tl_detection_model = self.config['tl']['tl_detection_model']
+           # UNET Detector setup
+           tl_detection_model = self.config['tl']['tl_detection_model']
                         #"unet_models/tl_detector_simulator.h5"
-        self.detector_model = load_model(tl_detection_model, 
+           self.detector_model = load_model(tl_detection_model, 
                                custom_objects={'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef })
-        self.detector_model._make_predict_function()
+           self.detector_model._make_predict_function()
         
         self.resize_height = self.config['tl']['detector_resize_height'] #96
         self.resize_width = self.config['tl']['detector_resize_width'] #128  
@@ -120,8 +124,8 @@ class TLDetector(object):
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
-        mode = "unet"
-        #mode = "mobilenet"    
+        #mode = "unet"
+        mode = "mobilenet"    
         
         if mode == "mobilenet":
             # mobilenet model
@@ -524,13 +528,14 @@ class TLDetector(object):
                 if (car_stop_dist < self.distance_to_tl_threshold):                    
                     start = time.time()
                     cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-                    self.number_of_detected_lights = self.light_classifier.detect_traffic_lights(cv_image)                    
+                    self.number_of_detected_lights = self.light_classifier.get_classification(cv_image)                    
                     end1 = time.time()
                     rospy.logdebug("Mobilenet Detection Time:%f s, Num of lights %d", 
                                     end1 - start, self.number_of_detected_lights)
                                     
                     if self.number_of_detected_lights > 0:                        
-                        state = self.light_classifier.get_classification()
+                        #state = self.light_classifier.get_classification()
+                        state = self.number_of_detected_lights
                         end2 = time.time()
                         rospy.logdebug("Mobilenet classify Time:%f s", end2 - end1) 
                         rospy.logdebug("-------------- light state %s---------------- ", state)

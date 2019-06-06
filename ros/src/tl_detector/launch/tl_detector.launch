@@ -1,4 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node"/>
+    <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node">
+        <param name="threshold" value="0.3" />
+	<param name="hw_ratio" value="1.5" /> 
+    </node>
 </launch>
