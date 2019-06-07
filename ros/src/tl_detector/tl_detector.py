@@ -106,6 +106,8 @@ class TLDetector(object):
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
         self.last_stop_wp_idx = -1
+        self.last_tl_idx = -1
+        self.last_tl_wp_idx = -1
         self.state_count = 0
 
         self.stop_line_positions = self.config['stop_line_positions']
@@ -148,19 +150,29 @@ class TLDetector(object):
 
         if self.wl_debug_lights < 1:
             self.wl_debug_lights += 1
-            rospy.logdebug("[tl_detector] %s traffic_lights_cb stoplines.len=%s ", 
-                            self.wl_debug_lights, len(self.config['stop_line_positions']))
-            for n in range(len(self.config['stop_line_positions'])):
-                rospy.logdebug("[tl_detector] stop_line_positions[%s] : x=%s, y=%s ", n, 
-                                self.config['stop_line_positions'][n][0],
-                                self.config['stop_line_positions'][n][1])
-                                                
-            rospy.logdebug("[tl_detector] %s traffic_lights_cb self.lights.len=%s ", 
-                        self.wl_debug_lights, len(self.lights))
-            for n in range(len(self.lights)):
-                rospy.logdebug("[tl_detector] lights[%s] : [%s, %s], ", n, 
-                                self.lights[n].pose.pose.position.x,
-                                self.lights[n].pose.pose.position.y)
+            if (self.config is not None):   
+                rospy.logdebug("\n[tl_detector] %s traffic_lights_cb stoplines.len=%s ", 
+                                self.wl_debug_lights, len(self.config['stop_line_positions']))
+                for n in range(len(self.config['stop_line_positions'])):
+                    rospy.logdebug("[tl_detector] stop_line_positions[%s] : x=%s, y=%s ", n, 
+                                    self.config['stop_line_positions'][n][0],
+                                    self.config['stop_line_positions'][n][1])
+                                         
+            if (self.lights is not None):       
+                rospy.logdebug("\n[tl_detector] %s traffic_lights_cb self.lights.len=%s ", 
+                            self.wl_debug_lights, len(self.lights))
+                for n in range(len(self.lights)):
+                    rospy.logdebug("[tl_detector] lights[%s] : [%s, %s], ", n, 
+                                    self.lights[n].pose.pose.position.x,
+                                    self.lights[n].pose.pose.position.y)
+                                
+            if (self.base_waypoints is not None):
+                rospy.logdebug("\n[tl_detector] %s traffic_lights_cb self.base_waypoints.len=%s ", 
+                            self.wl_debug_lights, len(self.base_waypoints.waypoints))
+                for n in range(len(self.base_waypoints.waypoints)):
+                    rospy.logdebug("[tl_detector] base_wp[%s] : [%s, %s], ", n, 
+                                    self.base_waypoints.waypoints[n].pose.pose.position.x,
+                                    self.base_waypoints.waypoints[n].pose.pose.position.y)
 
     #################################### U-Net Part #######################
 
@@ -439,10 +451,14 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
+        car_wp_idx = -1
+        if (self.pose is not None) and (self.base_waypoints is not None): 
+            car_wp_idx = self.get_closest_wp_idx(self.pose.pose, self.base_waypoints.waypoints)
 
         if self.state != state:
-            rospy.logwarn("[detect_tl] Traffic light detection change: ----------------------------  %d ---> %d, %s ",
-                                                self.state, state, TRAFFIC_LIGHT_NAME[state])
+            rospy.logwarn("[detect_tl] Traffic light changed: last_stop_wp_idx:%s, car_wp_idx:%s,   %d, %s ---> %d, %s ",
+                                    self.last_stop_wp_idx, car_wp_idx, 
+                                    self.state, TRAFFIC_LIGHT_NAME[self.state], state, TRAFFIC_LIGHT_NAME[state])
             self.state_count = 0
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
@@ -454,12 +470,12 @@ class TLDetector(object):
             ego_go = "Stop!"
             if stop_wp_idx == -1:
                 ego_go = "Go!"            
-            rospy.logdebug("[detect_tl] %3d Publish traffic_waypoint.1 last_stop_wp_idx: %s. state=%s, %s \n", 
-                                            self.state_count, self.last_stop_wp_idx, self.state, ego_go)
+            rospy.logdebug("[detect_tl]%3d Pub traffic_waypoint.1 last_stop_wp:%s, car_wp:%s, state=%s, %s \n", 
+                                            self.state_count, self.last_stop_wp_idx, car_wp_idx, self.state, ego_go)
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_stop_wp_idx))
-            rospy.logdebug("[detect_tl] %3d Publish traffic_waypoint.2 last_stop_wp_idx: %s. state=%s \n", 
-                                            self.state_count, self.last_stop_wp_idx, self.state)
+            rospy.logdebug("[detect_tl]%3d Pub traffic_waypoint.2 last_stop_wp:%s, car_wp:%s. state=%s \n", 
+                                            self.state_count, self.last_stop_wp_idx, car_wp_idx, self.state)
 
         self.state_count += 1
 
@@ -515,7 +531,7 @@ class TLDetector(object):
 
         """     
         if (self.pose is not None) and (self.has_image) and (self.base_waypoints is not None):            
-            tl_idx = self.get_closest_wp_idx(self.pose.pose, self.lights)
+            tl_idx = self.get_closest_wp_idx(self.pose.pose, self.lights)                
             if tl_idx >= 0: 
                 # Convert stop_line to pseudo pose object for easier handling
                 stop_line = self.stop_line_positions[tl_idx]
@@ -529,63 +545,74 @@ class TLDetector(object):
                     return -1, TrafficLight.UNKNOWN
                     
                 car_wp_idx = self.get_closest_wp_idx(self.pose.pose, self.base_waypoints.waypoints)
-                rospy.logdebug("[Mobilenet] Closest stop_wp_idx: %s. car idx:%s", stop_wp_idx, car_wp_idx)
                 
                 tl_wp = self.lights[tl_idx]
+                tl_wp_idx = self.get_closest_wp_idx(tl_wp.pose.pose, self.base_waypoints.waypoints)
                 
-
-                closest_stop_wp = self.base_waypoints.waypoints[stop_wp_idx]
-                stop_tl_dist = self.dist_to_point(closest_stop_wp.pose.pose, tl_wp.pose.pose)
+                stop_wp = self.base_waypoints.waypoints[stop_wp_idx]
                 car_stop_dist = self.dist_to_point(self.pose.pose, stop_line_pose)
+                if (car_wp_idx > stop_wp_idx):
+                    car_stop_dist *= -1
+                    
+                if (self.last_tl_idx != tl_idx):
+                    rospy.logwarn("[Mobilenet] New traffic lights founded idx:%d(wp:%d) --> idx:%d(wp:%d)",
+                            self.last_tl_idx, self.last_tl_wp_idx,    tl_idx, tl_wp_idx)
+                    self.last_tl_idx = tl_idx
+                    self.last_tl_wp_idx = tl_wp_idx
+                    
+                rospy.logdebug("[Mobilenet] Closest tl_wp:%s, stop_wp:%s. car_wp:%s, car_stop_dist:%.2f",
+                            tl_wp_idx, stop_wp_idx, car_wp_idx, car_stop_dist)
                 
                 state = TrafficLight.UNKNOWN
 
-                if (car_stop_dist < self.distance_to_tl_threshold):                    
-                    start = time.time()
-                    cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-                    self.detected_lights_state = self.light_classifier.get_classification(cv_image)                    
-                    end1 = time.time()
-                    rospy.logdebug("[Mobilenet] Detection Time:%f s, lights state %d", 
-                                    end1 - start, self.detected_lights_state)
-                                    
-                    if self.detected_lights_state != TrafficLight.UNKNOWN:                        
-                        #state = self.light_classifier.get_classification()
-                        state = self.detected_lights_state
-                        #end2 = time.time()
-                        #rospy.logdebug("Mobilenet classify Time:%f s", end2 - end1) 
-                        rospy.logdebug("[Mobilenet] ------------------------------ light state %s ", state)
+                if (tl_wp_idx >= car_wp_idx): 
+                    if (car_stop_dist < self.distance_to_tl_threshold):                    
+                        start = time.time()
+                        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+                        self.detected_lights_state = self.light_classifier.get_classification(cv_image)                    
+                        end1 = time.time()
+                        rospy.logdebug("[Mobilenet] Detection Time:%f s, lights state %d", 
+                                        end1 - start, self.detected_lights_state)
+                                        
+                        if self.detected_lights_state != TrafficLight.UNKNOWN:                        
+                            #state = self.light_classifier.get_classification()
+                            state = self.detected_lights_state
+                            #end2 = time.time()
+                            #rospy.logdebug("Mobilenet classify Time:%f s", end2 - end1) 
+                            rospy.logdebug("[Mobilenet] ------------------------------ light state %s ", state)
 
-                        tl_wp_idx = self.get_closest_wp_idx(tl_wp.pose.pose, self.base_waypoints.waypoints)
-                        rospy.logdebug("[Mobilenet] Car position(%s): (x, y) = (%.2f, %.2f); car_stop_dist=%.2f", 
-                                        car_wp_idx, self.pose.pose.position.x, self.pose.pose.position.y, car_stop_dist)
-                        rospy.logdebug("[Mobilenet] Stop line   (%s): (x, y) = (%.2f, %.2f); stop_tl_dist=%.2f", 
-                                        stop_wp_idx, stop_line[0], stop_line[1], stop_tl_dist)
-                        rospy.logdebug("[Mobilenet] TrafficLight(%s): (x, y) = (%.2f, %.2f); Upcoming tl_idx:%s", 
-                                        tl_wp_idx, tl_wp.pose.pose.position.x, tl_wp.pose.pose.position.y, tl_idx)
-                                  
-                        closest_stop_line_wp_idx = None
-                        #"""
-                        if state == TrafficLight.RED:
-                            #if(self.pose):
-                            #car_pose_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
-                            smallest_wp_dist = len(self.base_waypoints.waypoints)
-                            for i in range(len(self.stop_line_positions)):
-                                #stop_line_point = self.stop_line_positions[i]
-                                #stop_line_point_wp_idx = self.get_closest_waypoint(stop_line_point[0], stop_line_point[1])
-                                dist = stop_wp_idx - car_wp_idx
-                                if dist >= 0 and dist < smallest_wp_dist:
-                                    smallest_wp_dist = dist
-                                    closest_stop_line_wp_idx = stop_wp_idx
+                            """
+                            closest_stop_line_wp_idx = None
+                            if state == TrafficLight.RED:
+                                #if(self.pose):
+                                #car_pose_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
+                                smallest_wp_dist = len(self.base_waypoints.waypoints)
+                                for i in range(len(self.stop_line_positions)):
+                                    #stop_line_point = self.stop_line_positions[i]
+                                    #stop_line_point_wp_idx = self.get_closest_waypoint(stop_line_point[0], stop_line_point[1])
+                                    dist = stop_wp_idx - car_wp_idx
+                                    if dist >= 0 and dist < smallest_wp_dist:
+                                        smallest_wp_dist = dist
+                                        closest_stop_line_wp_idx = stop_wp_idx
 
-                            rospy.logdebug("[Mobilenet] Detected lights - closest_stop_line_wp_idx: %s:\n", closest_stop_line_wp_idx)                      
-                            return closest_stop_line_wp_idx, state 
-                        #"""                      
-                      
+                                rospy.logdebug("[Mobilenet] Detected lights - closest_stop_line_wp_idx: %s:\n", closest_stop_line_wp_idx)                      
+                                return closest_stop_line_wp_idx, state 
+                            """                                            
+                        else:
+                            rospy.logwarn("[Mobilenet] No trafic light found! %s", self.detected_lights_state)                                             
                     else:
-                        rospy.logwarn("[Mobilenet] No trafic light found!")                 
+                        rospy.logdebug("[Mobilenet] Next TL too far yet. car_stop_dist=%.2f", car_stop_dist)                                            
                 else:
-                    rospy.logdebug("[Mobilenet] Next TL too far yet. car_stop_dist=%s", car_stop_dist)
-                    state = TrafficLight.UNKNOWN                    
+                    rospy.logdebug("[Mobilenet] Nearest TL passed. car_stop_dist= %.2f", car_stop_dist)
+                
+                stop_tl_dist = self.dist_to_point(tl_wp.pose.pose, stop_wp.pose.pose)
+                rospy.logdebug("[Mobilenet] Car position(%s):(x,y)=(%.2f,%.2f); car_stop_dist=%.2f", 
+                                car_wp_idx, self.pose.pose.position.x, self.pose.pose.position.y, car_stop_dist)
+                rospy.logdebug("[Mobilenet] ClosestStopL(%s):(x,y)=(%.2f,%.2f); stop_tl_dist=%.2f", 
+                                stop_wp_idx, stop_line[0], stop_line[1], stop_tl_dist)
+                rospy.logdebug("[Mobilenet] TrafficLight(%s):(x,y)=(%.2f,%.2f); Upcoming tl_idx:%s", 
+                                tl_wp_idx, tl_wp.pose.pose.position.x, tl_wp.pose.pose.position.y, tl_idx)
+                     
 
                 return stop_wp_idx, state         
                         
