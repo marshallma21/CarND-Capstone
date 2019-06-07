@@ -12,7 +12,7 @@ from styx_msgs.msg import TrafficLightArray, TrafficLight
 # from object_detection.utils import visualization_utils as vis_util
 
 
-class TLClassifier(object):
+class TLClassifier_SSD(object):
     def __init__(self):
         self.is_carla=rospy.get_param("is_carla")
         #self.is_carla=True
@@ -22,11 +22,12 @@ class TLClassifier(object):
         #self.hw_ratio = 0.5  # height_width ratio
         print('Initializing classifier with threshold =', self.threshold)
         self.signal_classes = ['Red', 'Green', 'Yellow']
+        self.light_state = TrafficLight.UNKNOWN
   
 
         # if sim_testing, we use a detection and classification models
         # if site_testing, we use a single model which does both detection and classification
-        model_path_base='ssd/'
+        model_path_base='models/ssd/'
         if not self.is_carla:  # we use different models for classification
             # keras classification model
             self.cls_model = load_model(model_path_base+'tl_model_5.h5')  # switched to model 5 for harsh light
@@ -238,7 +239,7 @@ class TLClassifier(object):
 
         return box, conf, cls_idx
 
-    def get_classification(self, cv_image):
+    def detect_traffic_lights(self, cv_image):
         """Determines the color of the traffic light in the image
 
         Args:
@@ -295,7 +296,15 @@ class TLClassifier(object):
                 img_np = cv2.resize(processed_img[b[0]:b[2], b[1]:b[3]], (32, 32))
                 light_state=self.get_simulator_classification(img_np)
         rospy.logdebug('light_state==============================='+str(light_state))
-        return light_state
+
+        self.light_state = light_state
+        if light_state == TrafficLight.UNKNOWN:
+            return 0
+        else:
+            return 1
+
+    def get_classification(self):
+        return self.light_state
 
 if __name__ == '__main__':
     tl_cls=TLClassifier()

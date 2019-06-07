@@ -35,7 +35,7 @@ MAX_DECL = 0.5
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
+        rospy.init_node('[waypoint_updater] waypoint_updater', log_level=rospy.INFO)
         rospy.loginfo("Welcome to waypoint_updater")
 
         # TODO: Add other member variables you need below
@@ -92,7 +92,7 @@ class WaypointUpdater(object):
         self.final_waypoints_pub.publish(final_wp)
 
         current_time = time.time()
-        rospy.logdebug("Waypoint delay time:%.4f s", current_time - self.waypoint_delay_time)
+        rospy.logdebug("[waypoint_updater] Waypoint delay time:%.4f s", current_time - self.waypoint_delay_time)
 
         self.thread_working = False
 
@@ -130,7 +130,7 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         # TODO: Implement
         current_time = time.time()
-        rospy.logdebug("Pose update time:%.4f s", current_time - self.pose_delay_time)
+        rospy.logdebug("[waypoint_updater] Pose update time:%.4f s", current_time - self.pose_delay_time)
         self.pose_delay_time = current_time
         
         self.pose = msg
@@ -151,7 +151,7 @@ class WaypointUpdater(object):
 
     def base_waypoints_cb(self, waypoints):
         # TODO: Implement
-        rospy.loginfo("Base waypoint Callback")
+        rospy.loginfo("[waypoint_updater] Base waypoint Callback")
         self.base_waypoints = waypoints
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
@@ -161,7 +161,7 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         if self.stopline_wp_idx != msg.data:
-            rospy.logwarn("[Waypoint Updater] stopline_wp_idx updated: %s.", msg.data)
+            rospy.logwarn("[waypoint_updater] stopline_wp_idx updated: %s.", msg.data)
 
         self.stopline_wp_idx = msg.data
 

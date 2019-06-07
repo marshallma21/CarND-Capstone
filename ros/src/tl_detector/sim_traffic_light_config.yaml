@@ -11,16 +11,3 @@ stop_line_positions:
     - [161.76, 2303.82]
     - [351.84, 1574.65]
 is_site: False
-tl:
-  tl_classification_model: 'unet_models/tl_classifier_simulator.h5'
-  tl_detection_model: 'unet_models/tl_detector_simulator.h5'
-  classifier_resize_height: 64
-  classifier_resize_width: 32
-  detector_resize_width: 128
-  detector_resize_height: 96
-  projection_threshold: 2
-  projection_min: 200
-  detector_rate: 6
-  color_mode: 'rgb8'
-  is_carla: false
-
