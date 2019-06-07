@@ -128,6 +128,7 @@ class TLClassifier(object):
                 else:
                     print(box)
                     print('localization confidence: ', scores[idx])
+                    rospy.logdebug('localization confidence:==============================='+str(scores[idx]))
             # ****************end of corner cases***********************
 
         return box
@@ -232,6 +233,7 @@ class TLClassifier(object):
                 else:
                     print(box)
                     print('localization confidence: ', scores[idx])
+                    rospy.logdebug('localization confidence:==============================='+str(scores[idx]))
             # ****************end of corner cases***********************
 
         return box, conf, cls_idx
@@ -256,7 +258,7 @@ class TLClassifier(object):
            print("Get out of Localization-Classification")
            if np.array_equal(b, np.zeros(4)):
                print('unknown')
-               light_state = 3
+               light_state = TrafficLight.UNKNOWN
            else:
                # light_state = cls_idx
                if cls_idx == 1.0:

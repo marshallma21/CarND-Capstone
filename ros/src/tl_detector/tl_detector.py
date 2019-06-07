@@ -76,6 +76,7 @@ class TLDetector(object):
            self.listener = tf.TransformListener()
         elif mode == "unet":
             # UNET Classifier Setup  
+            from light_classification.tl_unet_classifier import TLUnetClassifier
             self.light_unet_classifier = TLUnetClassifier()
             tl_classification_model = self.config['tl']['tl_classification_model']
                                 #"unet_models/tl_classifier_simulator.h5"
