@@ -466,7 +466,7 @@ class TLClassifier_YOLOv3(object):
         color_scores = [0.0, 0.0, 0.0, 0.0, 0.0]
         for i in range(min(3,len(self.traffic_light_scores))):
             result = self.red_green_yellow(self.traffic_light_img_list[i])
-            rospy.logdebug("[tl_classifier] Top prob #%d: %.4f %s", i, self.traffic_light_scores[i], result)
+            rospy.logdebug("[tl_classifier] Top prob #%d: %.4f, %s", i, self.traffic_light_scores[i], result)
             color_scores[result] += self.traffic_light_scores[i]
 
         #rospy.logdebug("color_scores.len=%s, color_scores=%s", len(color_scores), color_scores)
