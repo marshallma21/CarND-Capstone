@@ -57,8 +57,8 @@ class TLDetector(object):
         rospy.set_param('is_carla',self.is_carla)
         rospy.loginfo("[tl_detector] Is site running: %s", self.is_carla)
 
-        self.light_classifier = TLClassifier_YOLOv3(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
-        #self.light_classifier = TLClassifier_SSD(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
+        #self.light_classifier = TLClassifier_YOLOv3(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
+        self.light_classifier = TLClassifier_SSD(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
 
         self.distance_to_tl_threshold = 67.0
         self.state = TrafficLight.UNKNOWN

@@ -11,9 +11,29 @@ from styx_msgs.msg import TrafficLightArray, TrafficLight
 # os.chdir(cwd+'/models')
 # from object_detection.utils import visualization_utils as vis_util
 
+def plot_one_box(img, coord, label=None, score=None, color=None, line_thickness=None):
+    '''
+    coord: [x_min, y_min, x_max, y_max] format coordinates.
+    img: img to plot on.
+    label: str. The label name.
+    color: int. color index.
+    line_thickness: int. rectangle line thickness.
+    '''
+    tl = line_thickness or int(round(0.002 * max(img.shape[0:2])))  # line thickness
+    color = color or [255,0,0]
+    c1, c2 = (int(coord[0]), int(coord[1])), (int(coord[2]), int(coord[3]))
+    cv2.rectangle(img, c1, c2, color, thickness=tl)
+    if label:
+        label = '%s:%.2f'%(label,score)
+        tf = max(tl - 1, 1)  # font thickness
+        t_size = cv2.getTextSize(label, 0, fontScale=float(tl) / 5, thickness=tf)[0]
+        c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
+        cv2.rectangle(img, c1, c2, color, -1)  # filled
+        cv2.putText(img, label, (c1[0], c1[1] - 2), 0, float(tl) / 5, [0, 0, 0], thickness=tf, lineType=cv2.LINE_AA)
 
 class TLClassifier_SSD(object):
-    def __init__(self):
+    def __init__(self, DEBUG_OUTPUT=False):
+        self.DEBUG_SWITCH = DEBUG_OUTPUT
         self.is_carla=rospy.get_param("is_carla")
         #self.is_carla=True
         self.threshold =rospy.get_param("~threshold")
@@ -23,7 +43,9 @@ class TLClassifier_SSD(object):
         print('Initializing classifier with threshold =', self.threshold)
         self.signal_classes = ['Red', 'Green', 'Yellow']
         self.light_state = TrafficLight.UNKNOWN
-  
+
+        if self.DEBUG_SWITCH:
+            self.DEBUG_IMAGE = None
 
         # if sim_testing, we use a detection and classification models
         # if site_testing, we use a single model which does both detection and classification
@@ -97,6 +119,22 @@ class TLClassifier_SSD(object):
             boxes = np.squeeze(boxes)
             classes = np.squeeze(classes)
             scores = np.squeeze(scores)
+
+            
+            if self.DEBUG_SWITCH:
+                height_ori, width_ori = image.shape[:2]
+                for i in range(len(boxes)):
+                    if scores[i] > 0.15:
+                        x0, y0, x1, y1 = boxes[i]
+                        x0 = max(0, int(x0*height_ori))
+                        x1 = min(height_ori, int(x1*height_ori))
+                        y0 = max(0, int(y0*width_ori))
+                        y1 = min(width_ori, int(y1*width_ori))
+
+                        plot_one_box(image, [y0, x0, y1, x1])
+
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                self.DEBUG_IMAGE = image
 
             cls = classes.tolist()
             # print(cls)
@@ -191,10 +229,26 @@ class TLClassifier_SSD(object):
             classes = np.squeeze(classes)  # classes
             scores = np.squeeze(scores)  # confidence
 
+            
+            if self.DEBUG_SWITCH:
+                height_ori, width_ori = image.shape[:2]
+                for i in range(len(boxes)):
+                    if scores[i] > 0.15:
+                        x0, y0, x1, y1 = boxes[i]
+                        x0 = max(0, int(x0*height_ori))
+                        x1 = min(height_ori, int(x1*height_ori))
+                        y0 = max(0, int(y0*width_ori))
+                        y1 = min(width_ori, int(y1*width_ori))
+
+                        plot_one_box(image, [y0, x0, y1, x1])
+
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                self.DEBUG_IMAGE = image
+
             cls = classes.tolist()
 
             # Find the most confident detection/classification
-            idx = 0;
+            idx = 0
             conf = scores[idx]
             cls_idx = cls[idx]
 
