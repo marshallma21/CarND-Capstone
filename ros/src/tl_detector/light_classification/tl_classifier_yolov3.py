@@ -363,13 +363,15 @@ class yolov3(object):
 
 
 class TLClassifier_YOLOv3(object):
-    def __init__(self):
+    def __init__(self, DEBUG_OUTPUT=False):
+        self.DEBUG_SWITCH = DEBUG_OUTPUT
         self.is_carla=rospy.get_param("is_carla")
 
         self.traffic_light_img_list = []
         self.traffic_light_scores = []
 
-        #self.DEBUG_IMAGE = None
+        if self.DEBUG_SWITCH:
+            self.DEBUG_IMAGE = None
 
 
         self.input_size = [603, 603]
@@ -436,12 +438,15 @@ class TLClassifier_YOLOv3(object):
                 #cv2.waitKey(0)
                 self.traffic_light_img_list.append(crop_img)
                 self.traffic_light_scores.append(scores_[i])
-
-            #plot_one_box(img_ori, [x0, y0, x1, y1], label=self.classes[labels_[i]], score=scores_[i], color=self.color_table[labels_[i]])
+                
+            if self.DEBUG_SWITCH:
+                plot_one_box(img_ori, [x0, y0, x1, y1], label=self.classes[labels_[i]], score=scores_[i], color=self.color_table[labels_[i]])
 
         #cv2.imshow('Detection result', img_ori)
         #cv2.imwrite('out/%05d.png'%self.frame_count, img_ori)
-        #self.DEBUG_IMAGE = img_ori
+
+        if self.DEBUG_SWITCH:
+            self.DEBUG_IMAGE = img_ori
 
         self.frame_count+=1
 

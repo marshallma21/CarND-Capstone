@@ -26,6 +26,7 @@ STATE_COUNT_THRESHOLD = 3
 SMOOTH = 1.
 TRAFFIC_LIGHT_NAME = ['RED','YELLOW','GREEN', 'Invalid', 'UNKNOWN']
 
+DEBUG_IMAGE_SWITCH = True
 
 class TLDetector(object):
     def __init__(self):
@@ -56,8 +57,8 @@ class TLDetector(object):
         rospy.set_param('is_carla',self.is_carla)
         rospy.loginfo("[tl_detector] Is site running: %s", self.is_carla)
 
-        self.light_classifier = TLClassifier_YOLOv3()
-        #self.light_classifier = TLClassifier_SSD()
+        self.light_classifier = TLClassifier_YOLOv3(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
+        #self.light_classifier = TLClassifier_SSD(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
 
         self.distance_to_tl_threshold = 67.0
         self.state = TrafficLight.UNKNOWN
@@ -84,7 +85,8 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
 
-        self.DEBUG_IMG_pub = rospy.Publisher('/detector_image', Image, queue_size=1)
+        if DEBUG_IMAGE_SWITCH:
+            self.DEBUG_IMG_pub = rospy.Publisher('/detector_image', Image, queue_size=1)
 
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
@@ -210,8 +212,12 @@ class TLDetector(object):
 
         self.thread_working = False
 
-        #image_message = self.bridge.cv2_to_imgmsg(self.light_classifier.DEBUG_IMAGE, encoding="bgr8")   
-        #self.DEBUG_IMG_pub.publish(image_message)
+        if DEBUG_IMAGE_SWITCH:
+            try:
+                image_message = self.bridge.cv2_to_imgmsg(self.light_classifier.DEBUG_IMAGE, encoding="bgr8")   
+                self.DEBUG_IMG_pub.publish(image_message)
+            except:
+                rospy.logwarn("Unable to get debug image")
 
 
     def image_cb(self, msg):
