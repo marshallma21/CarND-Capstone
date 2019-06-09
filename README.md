@@ -12,7 +12,9 @@ Using the Robot Operating System (ROS), we created nodes for :
 You can find the latest version of this project on
 [Github](https://github.com/marshallma21/CarND-Capstone-Friday.git)
 
-
+The YOLOv3 tensorflow model can be downloaded 
+[here](https://github.com/marshallma21/CarND-Capstone-Friday/releases/tag/models)
+Extract the files to `ros/src/tl_detector/models/yolov3`
 
 ### Beyond the Requirements
 
