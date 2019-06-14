@@ -5,7 +5,7 @@ import rospy
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
-MAX_BRAKE = 400.0
+MAX_BRAKE = 700.0
 
 class Controller(object):
     def __init__(self, vehicle_mass, fuel_capacity, brake_deadband, decel_limit,
