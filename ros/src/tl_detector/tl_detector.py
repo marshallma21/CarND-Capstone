@@ -60,7 +60,7 @@ class TLDetector(object):
         #self.light_classifier = TLClassifier_YOLOv3(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
         self.light_classifier = TLClassifier_SSD(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
 
-        self.distance_to_tl_threshold = 67.0
+        self.distance_to_tl_threshold = 100 #67.0
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
         self.last_stop_wp_idx = -1
@@ -261,15 +261,18 @@ class TLDetector(object):
        
         self.base_waypoints = None     int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+        
+        ########################################################################
+        #  |(car position)           |(stop line)             |(traffic light) #
+        #  | car_wp_idx              | stop_wp_idx            | tl_wp_idx      #
+        #  |<---car_stop distance--->|<---stop_tl distance--->|                #
+        #  |<--------------------car_tl distance------------->|                #
+        ######################################################################## 
 
         """     
         if (self.pose is not None) and (self.has_image) and (self.base_waypoints is not None):            
             tl_idx = self.get_closest_wp_idx(self.pose.pose, self.lights)                
-            if tl_idx >= 0: 
-                ########################################################################
-                #  |(car position)           |(stop line)             |(traffic light) #
-                #  |<---car_stop distance--->|<---stop_tl distance--->|                #
-                ########################################################################                
+            if tl_idx >= 0:
                     
                 # Nearest car position waypoint index
                 car_wp_idx = self.get_closest_wp_idx(self.pose.pose, self.base_waypoints.waypoints)
@@ -291,23 +294,30 @@ class TLDetector(object):
                 # Distance from car position to stop line 
                 car_stop_dist = self.dist_to_point(self.pose.pose, stop_line_pose)
                 if (car_wp_idx > stop_wp_idx):
-                    car_stop_dist = 0 - car_stop_dist
+                    car_stop_dist = -car_stop_dist
                     
                 if (self.last_tl_idx != tl_idx):
                     rospy.logwarn("[TL] New traffic lights founded  idx: %d(wp:%d) ----> idx: %d(wp:%d)\n",
-                                        self.last_tl_idx, self.last_tl_wp_idx, tl_idx, tl_wp_idx)
+                                                self.last_tl_idx, self.last_tl_wp_idx, tl_idx, tl_wp_idx)
                     self.last_tl_idx = tl_idx
                     self.last_tl_wp_idx = tl_wp_idx
                     
-                rospy.logdebug("[TL] Closest car_wp:%s, stop_wp:%s, tl_wp:%s.  car_stop_dist:%.2f",
-                            car_wp_idx, stop_wp_idx, tl_wp_idx, car_stop_dist)
+                car_tl_dist = self.dist_to_point(self.pose.pose, tl_wp.pose.pose)
+                if (car_wp_idx > tl_wp_idx):
+                    car_tl_dist = -car_tl_dist
+                rospy.logdebug("[TL] Closest car_wp:%s, stop_wp:%s, tl_wp:%s, car_stop_dist:%.2f",
+                            car_wp_idx, stop_wp_idx, tl_wp_idx, car_stop_dist)                
+                  
+                # Distance from stop line to traffic light
+                stop_wp = self.base_waypoints.waypoints[stop_wp_idx]
+                stop_tl_dist = self.dist_to_point(tl_wp.pose.pose, stop_wp.pose.pose)
                 
                 state = TrafficLight.UNKNOWN
-                  
+                
                 # Detected traffic light should be ahead of car position
                 if (tl_wp_idx >= car_wp_idx): 
-                    # Only detect traffic lights in the camera image in range of distance_to_tl_threshold
-                    if (car_stop_dist < self.distance_to_tl_threshold):                    
+                    # Only detect front traffic lights from camera image which in range of distance_to_tl_threshold
+                    if (car_tl_dist < (self.distance_to_tl_threshold + stop_tl_dist)): 
                         start = time.time()
                         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8") 
                         self.number_of_detected_lights = self.light_classifier.detect_traffic_lights(cv_image)                        
@@ -317,27 +327,23 @@ class TLDetector(object):
                                                 
                         if self.number_of_detected_lights > 0:
                             state = self.light_classifier.get_classification()
-
-                            rospy.logdebug("[TL] ------------------------------ light state %s, %s ", state, TRAFFIC_LIGHT_NAME[state]) 
+                            rospy.logdebug("[TL] ---------------------------- car_tl_dist:%.2f, light state %s, %s ", 
+                                                               car_tl_dist,  state, TRAFFIC_LIGHT_NAME[state]) 
                                                                                  
                         else:
                             rospy.logwarn("[TL] No trafic light found! %s", self.number_of_detected_lights)                                             
                     else:
-                        rospy.logdebug("[TL] Next TL too far yet. car_stop_dist=%.2f", car_stop_dist)                                            
+                        rospy.logdebug("[TL] Next TL too far yet. car_tl_dist=%.2f", car_tl_dist)                                            
                 else:
                     rospy.logdebug("[TL] Nearest TL passed. car_stop_dist= %.2f", car_stop_dist)
-                
-                
-                # Distance from stop line to traffic light
-                stop_wp = self.base_waypoints.waypoints[stop_wp_idx]
-                stop_tl_dist = self.dist_to_point(tl_wp.pose.pose, stop_wp.pose.pose)
+                               
                 
                 rospy.logdebug("[TL] Car position(%s):(x,y)=(%.2f,%.2f); car_stop_dist=%.2f", 
                                 car_wp_idx, self.pose.pose.position.x, self.pose.pose.position.y, car_stop_dist)
                 rospy.logdebug("[TL] ClosestStopL(%s):(x,y)=(%.2f,%.2f); stop_tl_dist=%.2f", 
                                 stop_wp_idx, stop_line[0], stop_line[1], stop_tl_dist)
-                rospy.logdebug("[TL] TrafficLight(%s):(x,y)=(%.2f,%.2f); Upcoming tl_idx:%s", 
-                                tl_wp_idx, tl_wp.pose.pose.position.x, tl_wp.pose.pose.position.y, tl_idx)                     
+                rospy.logdebug("[TL] TrafficLight(%s):(x,y)=(%.2f,%.2f); car_tl_dist:%.2f", 
+                                tl_wp_idx, tl_wp.pose.pose.position.x, tl_wp.pose.pose.position.y, car_tl_dist)                     
 
                 return stop_wp_idx, state         
                         
