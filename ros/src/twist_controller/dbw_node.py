@@ -90,12 +90,13 @@ class DBWNode(object):
                                                                                     self.linear_vel,
                                                                                     self.angular_vel)
             if self.dbw_enabled:
-                rospy.logdebug("[dbw_node] Throttle:%.2f; Brake: %.2f; Steering: %.2f"%(self.throttle, self.brake, self.steering))
                 self.publish(self.throttle, self.brake, self.steering)
             rate.sleep()
+
     def dbw_enabled_cb(self, msg):
-        rospy.logwarn("[dbw_node] dbw_enabled change from %s to: %s"%(self.dbw_enabled, msg))
-        self.dbw_enabled = msg
+        if self.dbw_enabled != msg.data:
+            rospy.logwarn("[dbw_node] dbw_enabled change from %s to: %s"%(self.dbw_enabled, msg.data))
+        self.dbw_enabled = msg.data
 
     def twist_cb(self, msg):
         self.linear_vel = msg.twist.linear.x
@@ -122,6 +123,7 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+        rospy.logdebug("[dbw_node] Throttle:%.2f; Brake: %.2f; Steering: %.2f"%(throttle, brake, steer))
 
 if __name__ == '__main__':
     DBWNode()

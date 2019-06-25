@@ -34,4 +34,5 @@ class image_converter:
 
 ```
 rosrun image_view image_view image:=/tl_detection
+rosrun rqt_plot rqt_plot
 ```
