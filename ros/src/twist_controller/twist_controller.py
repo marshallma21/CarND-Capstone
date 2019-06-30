@@ -5,7 +5,7 @@ import rospy
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
-MAX_BRAKE = 700.0
+MAX_BRAKE = 1000.0
 
 class Controller(object):
     def __init__(self, vehicle_mass, fuel_capacity, brake_deadband, decel_limit,
@@ -35,7 +35,7 @@ class Controller(object):
         self.last_time = rospy.get_time()
 
 
-    def control(self, current_vel, dbw_enabled, linear_vel, angular_vel):
+    def control(self, current_vel, dbw_enabled, target_vel, angular_vel):
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
 
@@ -45,24 +45,41 @@ class Controller(object):
         
         current_vel = self.vel_lpf.filt(current_vel)
 
-        steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
+        steering = self.yaw_controller.get_steering(target_vel, angular_vel, current_vel)
 
-        vel_error = linear_vel - current_vel
+        vel_error = target_vel - current_vel
         self.last_vel = current_vel
 
         current_time = rospy.get_time()
         sample_time = current_time - self.last_time
         self.last_time = current_time
 
-        throttle = self.throttle_controller.step(vel_error, sample_time)
-        brake = 0
+        vehilce_constant = self.vehicle_mass * self.wheel_radius
 
-        if linear_vel == 0.0 and current_vel < 0.1:
-            throttle = 0.0
-            brake = MAX_BRAKE
-        elif throttle < 0.1 and vel_error < 0:
-            throttle = 0
-            decel = max(vel_error, self.decel_limit)
-            brake = min(MAX_BRAKE, (abs(decel) * self.vehicle_mass * self.wheel_radius))  # Torque N*m
+        if current_vel < 0.1: 
+            if vel_error <= 0:
+                throttle = 0.0
+                brake = MAX_BRAKE
+            elif vel_error > 0.0 and vel_error <= 1.5:
+                throttle = 0.1
+                brake = 0.0
+            else:
+                throttle = self.throttle_controller.step(vel_error, sample_time)
+                brake = 0
+        elif current_vel >= 0.1 and current_vel <= 1.5:
+            if vel_error <= 1.5: # speed diff is [-1.5,1.5], use brake pedal to control speed
+                throttle = 0.0
+                brake = vehilce_constant - (0.6 * vel_error * vehilce_constant) 
+            else:  # target speed is greater than vehicle speed by 1.5
+                throttle = self.throttle_controller.step(vel_error, sample_time)
+                brake = 0.0
+        elif current_vel > 1.5:
+            if vel_error < 0.0:
+                throttle = 0
+                decel = max(vel_error, self.decel_limit)
+                brake = min(MAX_BRAKE, (abs(decel) * self.vehicle_mass * self.wheel_radius)) 
+            else:
+                throttle = self.throttle_controller.step(vel_error, sample_time)
+                brake = 0.0
 
         return throttle, brake, steering

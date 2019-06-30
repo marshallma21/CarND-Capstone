@@ -57,8 +57,8 @@ class TLDetector(object):
         rospy.set_param('is_carla',self.is_carla)
         rospy.loginfo("[tl_detector] Is site running: %s", self.is_carla)
 
-        #self.light_classifier = TLClassifier_YOLOv3(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
-        self.light_classifier = TLClassifier_SSD(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
+        self.light_classifier = TLClassifier_YOLOv3(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
+        #self.light_classifier = TLClassifier_SSD(DEBUG_OUTPUT=DEBUG_IMAGE_SWITCH)
 
         self.distance_to_tl_threshold = 100 #67.0
         self.state = TrafficLight.UNKNOWN
@@ -315,29 +315,22 @@ class TLDetector(object):
                 
                 state = TrafficLight.UNKNOWN
                 
-                # Detected traffic light should be ahead of car position
-                if (tl_wp_idx >= car_wp_idx): 
-                    # Only detect front traffic lights from camera image which in range of distance_to_tl_threshold
-                    if (car_tl_dist < (self.distance_to_tl_threshold + stop_tl_dist)): 
-                        start = time.time()
-                        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8") 
-                        self.number_of_detected_lights = self.light_classifier.detect_traffic_lights(cv_image)                        
-                        end1 = time.time()
-                        rospy.logdebug("[TL] Detection Time:%f s, num of lights %d", 
-                                                end1 - start, self.number_of_detected_lights)
-                                                
-                        if self.number_of_detected_lights > 0:
-                            state = self.light_classifier.get_classification()
-                            rospy.logdebug("[tl_detector] %d trafficlights found. Light state: %s ", 
-                                                               self.number_of_detected_lights, TRAFFIC_LIGHT_NAME[state]) 
-                                                                                 
-                        else:
-                            rospy.logwarn("[tl_detector] No trafic light found! %s", self.number_of_detected_lights)                                             
-                    else:
-                        rospy.logdebug("[tl_detector] Next TL too far yet. car_tl_dist=%.2f", car_tl_dist)                                            
+
+                start = time.time()
+                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8") 
+                self.number_of_detected_lights = self.light_classifier.detect_traffic_lights(cv_image)                        
+                end1 = time.time()
+                rospy.logdebug("[TL] Detection Time:%f s, num of lights %d", 
+                                        end1 - start, self.number_of_detected_lights)
+                                        
+                if self.number_of_detected_lights > 0:
+                    state = self.light_classifier.get_classification()
+                    rospy.logdebug("[tl_detector] %d trafficlights found. Light state: %s ", 
+                                                        self.number_of_detected_lights, TRAFFIC_LIGHT_NAME[state]) 
+                                                                            
                 else:
-                    rospy.logdebug("[tl_detector] Nearest TL passed. car_stop_dist= %.2f", car_stop_dist)
-                               
+                    rospy.logwarn("[tl_detector] No trafic light found! %s", self.number_of_detected_lights)                                             
+
                 
                 rospy.logdebug("[tl_detector] Car position(%s):(x,y)=(%.2f,%.2f); car_stop_dist=%.2f", 
                                 car_wp_idx, self.pose.pose.position.x, self.pose.pose.position.y, car_stop_dist)
