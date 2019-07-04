@@ -29,7 +29,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 CONSTANT_DECEL = 1 / LOOKAHEAD_WPS  # Deceleration constant for smoother braking
 PUBLISHING_RATE = 20  # Rate (Hz) of waypoint publishing
-STOP_LINE_MARGIN = 2  # Distance in waypoints to pad in front of the stop line
+STOP_LINE_MARGIN = 4  # Distance in waypoints to pad in front of the stop line
 MAX_DECL = 0.5
 
 
@@ -70,53 +70,58 @@ class WaypointUpdater(object):
     def get_closest_waypoint_id(self):
         x = self.pose.pose.position.x
         y = self.pose.pose.position.y
-        closest_idx = self.waypoint_tree.query([x,y],1)[1]
+        if self.waypoint_tree != None:
+            closest_idx = self.waypoint_tree.query([x,y],1)[1]
 
-        closest_coord = self.waypoints_2d[closest_idx]
-        prev_coord = self.waypoints_2d[closest_idx-1]
+            closest_coord = self.waypoints_2d[closest_idx]
+            prev_coord = self.waypoints_2d[closest_idx-1]
 
-        cl_vect = np.array(closest_coord)
-        prev_vect = np.array(prev_coord)
-        pos_vect = np.array([x, y])
+            cl_vect = np.array(closest_coord)
+            prev_vect = np.array(prev_coord)
+            pos_vect = np.array([x, y])
 
-        val = np.dot(cl_vect-prev_vect, pos_vect-cl_vect)
+            val = np.dot(cl_vect-prev_vect, pos_vect-cl_vect)
 
-        if val > 0:
-            closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
+            if val > 0:
+                closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
+        else:
+            closest_idx = -1
         return closest_idx
 
     def publish_waypoints(self):
-        start_t = time.time()
-
         final_wp = self.generate_wp()
-        self.final_waypoints_pub.publish(final_wp)
-
-        current_time = time.time()
-        rospy.logdebug("[waypoint_updater] Waypoint delay time:%.4f s", current_time - self.waypoint_delay_time)
-
+        if final_wp != None:
+            self.final_waypoints_pub.publish(final_wp)
+        else:
+            rospy.logdebug("[waypoint_updater] No waypoint available")
         self.thread_working = False
 
     def generate_wp(self):
         lane = Lane()
 
-        closest_wp_idx = self.get_closest_waypoint_id()
-        farthest_wp_idx = closest_wp_idx + LOOKAHEAD_WPS
-        base_wp = self.base_waypoints.waypoints[closest_wp_idx:farthest_wp_idx]
+        car_wp_idx = self.get_closest_waypoint_id()
+        if car_wp_idx >= 0:
+            farthest_wp_idx = car_wp_idx + LOOKAHEAD_WPS
+            waypoints_range = self.base_waypoints.waypoints[car_wp_idx:farthest_wp_idx]
 
-        if self.stopline_wp_idx == -1 or self.stopline_wp_idx >= farthest_wp_idx:
-            lane.waypoints = base_wp
+            if self.stopline_wp_idx == -1 or self.stopline_wp_idx >= farthest_wp_idx:
+                lane.waypoints = waypoints_range
+            else:
+                lane.waypoints = self.decelerate_waypoints(waypoints_range, car_wp_idx)
+            
+            return lane
         else:
-            lane.waypoints = self.decelerate_waypoints(base_wp, closest_wp_idx)
-        
-        return lane
+            return None
 
-    def decelerate_waypoints(self,waypoints, closest_idx):
+    def decelerate_waypoints(self, waypoints, car_wp_idx):
         decl_wp = []
         for i in range(len(waypoints)):
             p = Waypoint()
             p.pose = waypoints[i].pose
 
-            stop_idx = max(self.stopline_wp_idx - closest_idx - STOP_LINE_MARGIN, 0)
+            stop_idx = max(self.stopline_wp_idx - car_wp_idx - STOP_LINE_MARGIN, 0)
+
+
             dist = self.distance(waypoints, i, stop_idx)
             vel = math.sqrt(2 * MAX_DECL * dist)
             if vel < 1.0:
