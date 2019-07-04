@@ -372,6 +372,7 @@ class TLClassifier_YOLOv3(object):
 
         if self.DEBUG_SWITCH:
             self.DEBUG_IMAGE = None
+            self.DEBUG_BOXES = []
 
 
         self.input_size = [603, 603]
@@ -398,7 +399,7 @@ class TLClassifier_YOLOv3(object):
 
         saver = tf.train.Saver()
         saver.restore(self.sess, self.model_path)
-        print('Load done')
+        # print('Load done')
         
     def detect_traffic_lights(self, img_ori, confidence_level=0.2, detect_class_id=[9]):
         start_t = time.time()
@@ -422,6 +423,7 @@ class TLClassifier_YOLOv3(object):
 
         self.traffic_light_img_list = []
         self.traffic_light_scores = []
+        self.DEBUG_BOXES = []
 
         for i in range(len(boxes_)):
             x0, y0, x1, y1 = boxes_[i]
@@ -432,16 +434,19 @@ class TLClassifier_YOLOv3(object):
             y1 = min(height_ori, int(y1))
 
             if labels_[i] == 9 and scores_[i] >= confidence_level: 
-                print(int(y0),int(y1), int(x0),int(x1))
+                # print(int(y0),int(y1), int(x0),int(x1))
                 crop_img = img_ori[y0:y1, x0:x1].copy()
                 #cv2.imshow("cropped", crop_img)
                 #cv2.waitKey(0)
                 self.traffic_light_img_list.append(crop_img)
                 self.traffic_light_scores.append(scores_[i])
+                if self.DEBUG_SWITCH:
+                    self.DEBUG_BOXES.append(boxes_[i])
+            else:
+                plot_one_box(img_ori, [x0, y0, x1, y1], label=self.classes[labels_[i]], score=scores_[i], color=[150,150,150])
                 
-            if self.DEBUG_SWITCH:
-                plot_one_box(img_ori, [x0, y0, x1, y1], label=self.classes[labels_[i]], score=scores_[i], color=self.color_table[labels_[i]])
-
+        
+        
         #cv2.imshow('Detection result', img_ori)
         #cv2.imwrite('out/%05d.png'%self.frame_count, img_ori)
 
@@ -471,8 +476,15 @@ class TLClassifier_YOLOv3(object):
         color_scores = [0.0, 0.0, 0.0, 0.0, 0.0]
         for i in range(min(3,len(self.traffic_light_scores))):
             result = self.red_green_yellow(self.traffic_light_img_list[i])
-            rospy.logdebug("[tl_classifier] Top prob #%d: %.4f, %s", i, self.traffic_light_scores[i], result)
             color_scores[result] += self.traffic_light_scores[i]
+
+            if self.DEBUG_SWITCH:
+                x0, y0, x1, y1 = self.DEBUG_BOXES[i]
+                if result == 0:
+                    color = [0,0,255]
+                elif result == 2:
+                    color = [0,255,0]
+                plot_one_box(self.DEBUG_IMAGE, [x0, y0, x1, y1], label="Traffic Light", score=self.traffic_light_scores[i], color=color)
 
         #rospy.logdebug("color_scores.len=%s, color_scores=%s", len(color_scores), color_scores)
         
@@ -519,7 +531,7 @@ class TLClassifier_YOLOv3(object):
         area = 32*32
         avg_saturation = sum_saturation / area #find average
         
-        print(avg_saturation)
+        # print(avg_saturation)
         sat_low_green = int(avg_saturation*0.5) 
         sat_low_red = int(avg_saturation*0.3) 
         sat_low_yellow = int(avg_saturation*0.7) 
