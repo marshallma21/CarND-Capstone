@@ -46,6 +46,15 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
+        is_carla = rospy.get_param('~is_carla', True)
+        if is_carla == False:
+            rospy.logwarn("[dbw_node] is_carla:%s", is_carla)
+        elif is_carla == True:
+            rospy.logwarn("[dbw_node] is_carla:%s", is_carla)
+        else:
+            rospy.logwarn("[dbw_node] Bad format:`is_carla`. Set default is_carla:True")
+            is_carla = True
+
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
@@ -63,7 +72,8 @@ class DBWNode(object):
                                     wheel_base=wheel_base,
                                     steer_ratio=steer_ratio,
                                     max_lat_accel=max_lat_accel,
-                                    max_steer_angle=max_steer_angle)
+                                    max_steer_angle=max_steer_angle,
+                                    is_carla=is_carla)
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
@@ -123,7 +133,7 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
-        rospy.logdebug("[dbw_node] Throttle:%.2f; Brake: %.2f; Steering: %.2f"%(throttle, brake, steer))
+        rospy.logdebug("[dbw_node] target_vel:%.2f; current_vel:%.4f; Throttle:%.2f; Brake: %.2f; Steering: %.2f"%(self.linear_vel, self.current_vel, throttle, brake, steer))
 
 if __name__ == '__main__':
     DBWNode()
