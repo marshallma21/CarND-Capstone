@@ -366,6 +366,14 @@ class TLClassifier_YOLOv3(object):
     def __init__(self, DEBUG_OUTPUT=False):
         self.DEBUG_SWITCH = DEBUG_OUTPUT
         self.is_carla=rospy.get_param("is_carla")
+        if self.is_carla == False:
+            rospy.logwarn("[tl_classifier] is_carla:%s", self.is_carla)
+        elif self.is_carla == True:
+            rospy.logwarn("[tl_classifier] is_carla:%s", self.is_carla)
+        else:
+            rospy.logwarn("[tl_classifier] Bad format:`is_carla`. Set default is_carla:True")
+            self.is_carla = True
+
 
         self.traffic_light_img_list = []
         self.traffic_light_scores = []
@@ -484,6 +492,8 @@ class TLClassifier_YOLOv3(object):
                     color = [0,0,255]
                 elif result == 2:
                     color = [0,255,0]
+                else:
+                    color = [150,150,150]
                 plot_one_box(self.DEBUG_IMAGE, [x0, y0, x1, y1], label="Traffic Light", score=self.traffic_light_scores[i], color=color)
 
         #rospy.logdebug("color_scores.len=%s, color_scores=%s", len(color_scores), color_scores)
@@ -585,10 +595,20 @@ class TLClassifier_YOLOv3(object):
         sum_yellow = self.findNoneZero(yellow_result)
         #print(sum_red, sum_yellow, sum_green)
         
-        if sum_red + sum_yellow >= 2 * sum_green:
+        if self.is_carla == True:
+            #print("is_carla:True")
+            if sum_green >= 30:
+                return 2
             return 0
-        elif sum_green >= sum_red:
-            return 2
+        elif self.is_carla == False:
+            #print("is_carla:False")
+            if sum_red + sum_yellow >= 2 * sum_green:
+                return 0
+            elif sum_green >= sum_red:
+                return 2
+            else:
+                return 4
         else:
+            rospy.logwarn("[tl_classifier] Bad is_carla format. Should never happen")
             return 4
         
