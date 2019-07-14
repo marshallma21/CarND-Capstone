@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import Int32
+from std_msgs.msg import Int32, Bool
 from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
@@ -21,7 +21,7 @@ from math import pow, sqrt
 from light_classification.tl_classifier_yolov3 import TLClassifier_YOLOv3
 from light_classification.tl_classifier_ssd import TLClassifier_SSD
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 1
 
 SMOOTH = 1.
 TRAFFIC_LIGHT_NAME = ['RED','YELLOW','GREEN', 'None', 'UNKNOWN']
@@ -145,7 +145,7 @@ class TLDetector(object):
         self.thread_working = False
 
         if self.system_ready_flag == False:
-            self.system_ready_pub(Bool(True))
+            self.system_ready_pub.publish(Bool(True))
             self.system_ready_flag = True
 
         if DEBUG_IMAGE_SWITCH:

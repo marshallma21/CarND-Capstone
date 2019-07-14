@@ -54,6 +54,11 @@ class DBWNode(object):
         else:
             rospy.logwarn("[dbw_node] Bad format:`is_carla`. Set default is_carla:True")
             is_carla = True
+        
+        if is_carla:
+            self.MAX_BRAKE = 1000.0
+        else:
+            self.MAX_BRAKE = 400.0
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -101,18 +106,22 @@ class DBWNode(object):
                                                                                     self.dbw_enabled,
                                                                                     self.linear_vel,
                                                                                     self.angular_vel)
-            if self.dbw_enabled and self.system_ready:
-                self.publish(self.throttle, self.brake, self.steering)
+            if self.dbw_enabled:
+                if self.system_ready:
+                    self.publish(self.throttle, self.brake, self.steering)
+                else:
+                    rospy.logwarn("[dbw_node] Loading detector model. Please wait...")
+                    self.publish(0.0, self.MAX_BRAKE, 0.0)
             rate.sleep()
 
     def dbw_enabled_cb(self, msg):
         if self.dbw_enabled != msg.data:
-            rospy.logwarn("[dbw_node] dbw_enabled change from %s to: %s"%(self.dbw_enabled, msg.data))
+            rospy.logwarn("[dbw_node] dbw_enabled change from %s to %s"%(self.dbw_enabled, msg.data))
         self.dbw_enabled = msg.data
     
     def system_ready_cb(self, msg):
         if self.system_ready != msg.data:
-            rospy.logwarn("[dbw_node] system_ready change from %s to: %s"%(self.system_ready, msg.data))
+            rospy.logwarn("[dbw_node] system_ready change from %s to %s"%(self.system_ready, msg.data))
         self.system_ready = msg.data
 
     def twist_cb(self, msg):
