@@ -68,6 +68,8 @@ class TLDetector(object):
         self.stop_line_positions = self.config['stop_line_positions']
         self.stop_line_wpidx = []
 
+        self.system_ready_flag = False
+
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)
 
@@ -86,6 +88,7 @@ class TLDetector(object):
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+        self.system_ready_pub = rospy.Publisher('/system_ready', Bool, queue_size=1)
 
         rospy.spin()
 
@@ -140,6 +143,10 @@ class TLDetector(object):
         self.upcoming_red_light_pub.publish(Int32(self.debounced_stop_wp_idx))
 
         self.thread_working = False
+
+        if self.system_ready_flag == False:
+            self.system_ready_pub(Bool(True))
+            self.system_ready_flag = True
 
         if DEBUG_IMAGE_SWITCH:
             try:

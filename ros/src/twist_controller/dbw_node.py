@@ -77,12 +77,14 @@ class DBWNode(object):
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
+        rospy.Subscriber('/system_ready', Bool, self.system_ready_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
 
         self.current_vel = None
         self.curr_and_vel = None
         self.dbw_enabled = None
+        self.system_ready = False
         self.linear_vel = None
         self.angular_vel = None
         self.throttle = self.steering = self.brake = 0
@@ -99,7 +101,7 @@ class DBWNode(object):
                                                                                     self.dbw_enabled,
                                                                                     self.linear_vel,
                                                                                     self.angular_vel)
-            if self.dbw_enabled:
+            if self.dbw_enabled and self.system_ready:
                 self.publish(self.throttle, self.brake, self.steering)
             rate.sleep()
 
@@ -107,6 +109,11 @@ class DBWNode(object):
         if self.dbw_enabled != msg.data:
             rospy.logwarn("[dbw_node] dbw_enabled change from %s to: %s"%(self.dbw_enabled, msg.data))
         self.dbw_enabled = msg.data
+    
+    def system_ready_cb(self, msg):
+        if self.system_ready != msg.data:
+            rospy.logwarn("[dbw_node] system_ready change from %s to: %s"%(self.system_ready, msg.data))
+        self.system_ready = msg.data
 
     def twist_cb(self, msg):
         self.linear_vel = msg.twist.linear.x
