@@ -29,7 +29,7 @@ def plot_one_box(img, coord, label=None, score=None, color=None, line_thickness=
         t_size = cv2.getTextSize(label, 0, fontScale=float(tl) / 5, thickness=tf)[0]
         c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
         cv2.rectangle(img, c1, c2, color, -1)  # filled
-        cv2.putText(img, label, (c1[0], c1[1] - 2), 0, float(tl) / 5, [0, 0, 0], thickness=tf, lineType=cv2.LINE_AA)
+        cv2.putText(img, label, (c1[0], c1[1] - 2), 0, float(tl) / 5, [0, 0, 0], thickness=tf)
 
 class TLClassifier_SSD(object):
     def __init__(self, DEBUG_OUTPUT=False):
