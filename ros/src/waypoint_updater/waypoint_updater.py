@@ -32,7 +32,7 @@ PUBLISHING_RATE = 20  # Rate (Hz) of waypoint publishing
 STOP_LINE_MARGIN = 4  # Distance in waypoints to pad in front of the stop line
 MAX_DECL = 0.5
 
-MAX_TRAFFIC_WP_TIMEOUT = 5 # timout for traffic_waypoint is 500ms
+MAX_TRAFFIC_WP_TIMEOUT = 10 # timout for traffic_waypoint is 1000ms
 
 
 class WaypointUpdater(object):
