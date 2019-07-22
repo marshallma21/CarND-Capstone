@@ -32,6 +32,8 @@ PUBLISHING_RATE = 20  # Rate (Hz) of waypoint publishing
 STOP_LINE_MARGIN = 4  # Distance in waypoints to pad in front of the stop line
 MAX_DECL = 0.5
 
+MAX_TRAFFIC_WP_TIMEOUT = 5 # timout for traffic_waypoint is 500ms
+
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -49,6 +51,8 @@ class WaypointUpdater(object):
         self.waypoint_delay_time = 0
         self.pose_delay_time = 0
 
+        self.traffic_waypoint_timout = MAX_TRAFFIC_WP_TIMEOUT
+
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)
 
@@ -56,6 +60,8 @@ class WaypointUpdater(object):
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+
+        self.msg_timeout_detector()
 
         rospy.spin()
         #self.loop()
@@ -65,6 +71,16 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints:
                 self.publish_waypoints()
+            rate.sleep()
+
+    def msg_timeout_detector(self):
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            self.traffic_waypoint_timout -= 1
+            if self.traffic_waypoint_timout <= 0:
+                self.traffic_waypoint_timout = 0
+                rospy.logwarn("[waypoint_updater] traffic_waypoint topic timeout")
+                self.stopline_wp_idx = -99
             rate.sleep()
     
     def get_closest_waypoint_id(self):
@@ -169,6 +185,7 @@ class WaypointUpdater(object):
             rospy.logdebug("[waypoint_updater] stopline_wp_idx updated: %s.", msg.data)
 
         self.stopline_wp_idx = msg.data
+        self.traffic_waypoint_timout = MAX_TRAFFIC_WP_TIMEOUT
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
