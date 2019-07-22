@@ -23,7 +23,6 @@ from light_classification.tl_classifier_ssd import TLClassifier_SSD
 
 STATE_COUNT_THRESHOLD = 1
 
-SMOOTH = 1.
 TRAFFIC_LIGHT_NAME = ['RED','YELLOW','GREEN', 'None', 'UNKNOWN']
 
 DEBUG_IMAGE_SWITCH = True
@@ -124,21 +123,30 @@ class TLDetector(object):
         if (self.pose is not None) and (self.base_waypoints is not None): 
             car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y) 
 
-        if self.state != state:
-            
-            self.state_count = 0
-            self.state = state
+        if self.is_carla:
+            if self.state != state:
+                self.state_count = 0
+                self.state = state
+            else:
+                self.state_count += 1
+                if self.state_count >= STATE_COUNT_THRESHOLD:
+                    if self.debounced_state != self.state:
+                        rospy.logwarn("[tl_detector] Debounced light state change: %s -> %s ", TRAFFIC_LIGHT_NAME[self.debounced_state], TRAFFIC_LIGHT_NAME[self.state])
+                        self.debounced_state = self.state
+                    
+                    if self.debounced_state == TrafficLight.GREEN or state == 3:
+                        self.debounced_stop_wp_idx = -1
+                    else:
+                        self.debounced_stop_wp_idx = stop_wp_idx
         else:
-            self.state_count += 1
-            if self.state_count >= STATE_COUNT_THRESHOLD:
-                if self.debounced_state != self.state:
-                    rospy.logwarn("[tl_detector] Debounced light state change: %s -> %s ", TRAFFIC_LIGHT_NAME[self.debounced_state], TRAFFIC_LIGHT_NAME[self.state])
-                    self.debounced_state = self.state
-                
-                if self.state == TrafficLight.GREEN or state == 3:
-                    self.debounced_stop_wp_idx = -1
-                else:
-                    self.debounced_stop_wp_idx = stop_wp_idx
+            if self.debounced_state != state:
+                rospy.logwarn("[tl_detector] Debounced light state change: %s -> %s ", TRAFFIC_LIGHT_NAME[self.debounced_state], TRAFFIC_LIGHT_NAME[state])
+                self.debounced_state = state
+            
+            if self.debounced_state == TrafficLight.GREEN or state == 3:
+                self.debounced_stop_wp_idx = -1
+            else:
+                self.debounced_stop_wp_idx = stop_wp_idx
         
         self.upcoming_red_light_pub.publish(Int32(self.debounced_stop_wp_idx))
 
@@ -232,7 +240,7 @@ class TLDetector(object):
                         stop_wp_idx = self.stop_line_wpidx[i]
             else:
                 state = 3
-                rospy.logdebug("[tl_detector] No trafic light found!")   
+                rospy.logdebug("[tl_detector] Detection Time:%.4fs. No trafic light found!", end1 - start)   
 
 
         return stop_wp_idx, state
