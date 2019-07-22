@@ -41,7 +41,7 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.pose = None
         self.base_waypoints = None
-        self.stopline_wp_idx = -1
+        self.stopline_wp_idx = -99
         self.waypoints_2d = None
         self.waypoint_tree = None
         self.thread_working = False
@@ -100,7 +100,7 @@ class WaypointUpdater(object):
         lane = Lane()
 
         car_wp_idx = self.get_closest_waypoint_id()
-        if car_wp_idx >= 0:
+        if car_wp_idx >= 0 and self.stopline_wp_idx != -99:
             farthest_wp_idx = car_wp_idx + LOOKAHEAD_WPS
             waypoints_range = self.base_waypoints.waypoints[car_wp_idx:farthest_wp_idx]
 

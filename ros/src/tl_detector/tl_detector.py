@@ -62,7 +62,7 @@ class TLDetector(object):
 
         self.state = TrafficLight.UNKNOWN
         self.debounced_state = TrafficLight.UNKNOWN
-        self.debounced_stop_wp_idx = -1
+        self.debounced_stop_wp_idx = -99
         self.state_count = 0
 
         self.stop_line_positions = self.config['stop_line_positions']
@@ -143,10 +143,7 @@ class TLDetector(object):
         self.upcoming_red_light_pub.publish(Int32(self.debounced_stop_wp_idx))
 
         self.thread_working = False
-
-        if self.system_ready_flag == False:
-            self.system_ready_pub.publish(Bool(True))
-            self.system_ready_flag = True
+        self.system_ready_pub.publish(Bool(True))
 
         if DEBUG_IMAGE_SWITCH:
             try:
