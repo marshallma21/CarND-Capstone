@@ -80,7 +80,7 @@ class WaypointUpdater(object):
             if self.traffic_waypoint_timout <= 0:
                 self.traffic_waypoint_timout = 0
                 rospy.logwarn("[waypoint_updater] traffic_waypoint topic timeout")
-                self.stopline_wp_idx = -99
+                # self.stopline_wp_idx = -99
             rate.sleep()
     
     def get_closest_waypoint_id(self):
