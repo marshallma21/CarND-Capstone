@@ -37,7 +37,7 @@ MAX_TRAFFIC_WP_TIMEOUT = 10 # timout for traffic_waypoint is 1000ms
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('[waypoint_updater] waypoint_updater', log_level=rospy.INFO)
+        rospy.init_node('[waypoint_updater] waypoint_updater', log_level=rospy.DEBUG)
         rospy.loginfo("Welcome to waypoint_updater")
 
         # TODO: Add other member variables you need below
@@ -79,7 +79,7 @@ class WaypointUpdater(object):
             self.traffic_waypoint_timout -= 1
             if self.traffic_waypoint_timout <= 0:
                 self.traffic_waypoint_timout = 0
-                rospy.logwarn("[waypoint_updater] traffic_waypoint topic timeout")
+                #rospy.logwarn("[waypoint_updater] traffic_waypoint topic timeout")
                 # self.stopline_wp_idx = -99
             rate.sleep()
     
@@ -124,7 +124,9 @@ class WaypointUpdater(object):
                 lane.waypoints = waypoints_range
             else:
                 lane.waypoints = self.decelerate_waypoints(waypoints_range, car_wp_idx)
-            
+
+            rospy.logdebug("[waypoint_updater] car_wp:%d, stopline_wp:%d", car_wp_idx, self.stopline_wp_idx)
+
             return lane
         else:
             return None
@@ -151,7 +153,7 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         # TODO: Implement
         current_time = time.time()
-        rospy.logdebug("[waypoint_updater] Pose update time:%.4f s", current_time - self.pose_delay_time)
+        #rospy.logdebug("[waypoint_updater] Pose update time:%.4f s", current_time - self.pose_delay_time)
         self.pose_delay_time = current_time
         
         self.pose = msg
