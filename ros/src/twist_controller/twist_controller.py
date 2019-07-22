@@ -94,31 +94,16 @@ class Controller(object):
                 if vel_error <= 0:
                     throttle = 0.0
                     brake = self.MAX_BRAKE
-                elif vel_error > 0 and vel_error <= 1.5:
-                    throttle = 0.0
-                    decel = max(vel_error, self.decel_limit)
-                    brake = min(self.MAX_BRAKE, 0.5 * (abs(decel) * self.vehicle_mass * self.wheel_radius))
                 else:
-                    throttle = 0.3
+                    throttle = 0.8
                     brake = 0.0
-            elif current_vel >= 1.0 and current_vel <= 2.0:
-                if vel_error <= -1.0:
+            elif current_vel >= 1.0:
+                if vel_error < -0.5:
                     throttle = 0.0
-                    brake = 0.8 * self.MAX_BRAKE
-                elif vel_error > -1.0 and vel_error <= 1.0: # speed diff is [-1.5,1.5], use brake pedal to control speed
-                    throttle = 0.0
-                    decel = max(vel_error, self.decel_limit)
-                    brake = min(self.MAX_BRAKE, 0.5 * (abs(decel) * self.vehicle_mass * self.wheel_radius))
-                else:  # target speed is greater than vehicle speed by 1.5
-                    throttle = self.throttle_controller.step(vel_error, sample_time)
-                    brake = 0.0
-            elif current_vel > 2.0:
-                if vel_error < 0.0:
-                    throttle = 0
                     decel = max(vel_error, self.decel_limit)
                     brake = min(self.MAX_BRAKE, (abs(decel) * self.vehicle_mass * self.wheel_radius)) 
                 else:
-                    throttle = self.throttle_controller.step(vel_error, sample_time)
+                    throttle = self.throttle_controller.step(vel_error, sample_time) * 3
                     brake = 0.0
 
         return throttle, brake, steering
