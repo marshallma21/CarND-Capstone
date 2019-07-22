@@ -87,6 +87,7 @@ class DBWNode(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
 
         self.msgcntr_limit = 50
+        self.msgcntr = self.msgcntr_limit
         self.current_vel = None
         self.curr_and_vel = None
         self.dbw_enabled = None
@@ -99,11 +100,11 @@ class DBWNode(object):
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
-        msgcntr = self.msgcntr_limit
+        self.msgcntr = self.msgcntr_limit
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            msgcntr -= 1
+            self.msgcntr -= 1
 
             if not None in (self.current_vel, self.linear_vel, self.angular_vel):
                 self.throttle, self.brake, self.steering = self.controller.control(self.current_vel,self.dbw_enabled,self.linear_vel,self.angular_vel)
@@ -111,16 +112,16 @@ class DBWNode(object):
                 if self.dbw_enabled:
                     self.publish(self.throttle, self.brake, self.steering)
                 else:
-                    if msgcntr <= 0:
+                    if self.msgcntr <= 0:
                         rospy.logwarn("[dbw_node] dbw_enable is False. Wait for dbw to engage...")
                     self.publish(0.0, self.MAX_BRAKE, 0.0)
             else:
-                if msgcntr <= 0:
+                if self.msgcntr <= 0:
                     rospy.logwarn("[dbw_node] current_pose not ready. Stay.")
                 self.publish(0.0, self.MAX_BRAKE, 0.0)
 
-            if msgcntr <= 0:
-                msgcntr = self.msgcntr_limit
+            if self.msgcntr <= 0:
+                self.msgcntr = self.msgcntr_limit
 
             rate.sleep()
 
@@ -162,7 +163,8 @@ class DBWNode(object):
         try:
             rospy.logdebug("[dbw_node] target_vel:%.2f; current_vel:%.4f; Throttle:%.2f; Brake: %.2f; Steering: %.2f"%(self.linear_vel, self.current_vel, throttle, brake, steer))
         except:
-            rospy.logwarn("[dbw_node] print dbw parameter error!")
+            if self.msgcntr <= 0:
+                rospy.logwarn("[dbw_node] print dbw parameter error!")
 
 if __name__ == '__main__':
     DBWNode()
