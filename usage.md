@@ -33,6 +33,9 @@ class image_converter:
 ```
 
 ```
-rosrun image_view image_view image:=/tl_detection
+rosrun image_view image_view image:=/detector_image
 rosrun rqt_plot rqt_plot
+
+# block waypoint_loader to publish /base_waypoints topic
+rosbag play --bag=bagfile.bag --topics /image_color /base_waypoints /current_pose /current_velocity /vehicle/dbw_enabled --pause
 ```
